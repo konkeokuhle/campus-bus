@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Driver Dashboard{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h1>Welcome, {{ session.full_name }}!</h1>
+            <p class="lead">Driver Dashboard</p>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Today's Trips</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">No trips scheduled for today.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-primary w-100 mb-2">Start Trip</button>
+                    <button class="btn btn-warning w-100 mb-2">Report Delay</button>
+                    <button class="btn btn-danger w-100">Emergency</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

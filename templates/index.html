@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<div class="container">
+    <!-- Hero Section -->
+    <div class="jumbotron text-center py-5">
+        <h1 class="display-4">🚌 Campus Bus Tracking System</h1>
+        <p class="lead">Never miss your bus again! Track your campus shuttle in real-time.</p>
+        <hr class="my-4">
+        <p>Get real-time updates, arrival notifications, and more.</p>
+        
+        {% if not session.user_id %}
+            <div class="mt-4">
+                <!-- Fixed: Changed from 'register'/'login' to 'auth.register'/'auth.login' -->
+                <a class="btn btn-primary btn-lg me-2" href="{{ url_for('auth.register') }}" role="button">
+                    <i class="fas fa-user-plus"></i> Get Started
+                </a>
+                <a class="btn btn-outline-primary btn-lg" href="{{ url_for('auth.login') }}" role="button">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+            </div>
+        {% else %}
+            <div class="mt-4">
+                <a class="btn btn-primary btn-lg" href="
+                    {% if session.user_type == 'student' %}
+                        {{ url_for('student.dashboard') }}
+                    {% elif session.user_type == 'driver' %}
+                        {{ url_for('driver.dashboard') }}
+                    {% elif session.user_type == 'admin' %}
+                        {{ url_for('admin.dashboard') }}
+                    {% else %}
+                        {{ url_for('main.index') }}
+                    {% endif %}
+                " role="button">
+                    <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Features Section -->
+    <div class="row mt-5">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-map-marked-alt fa-4x text-primary mb-3"></i>
+                    <h5 class="card-title">📍 Live Tracking</h5>
+                    <p class="card-text">See exactly where your bus is on the map in real-time. Track multiple buses simultaneously.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-bell fa-4x text-success mb-3"></i>
+                    <h5 class="card-title">⏰ Arrival Alerts</h5>
+                    <p class="card-text">Get notified when your bus is approaching your stop. Never wait in the cold again!</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-qrcode fa-4x text-info mb-3"></i>
+                    <h5 class="card-title">📱 QR Check-in</h5>
+                    <p class="card-text">Easy boarding with QR code scanning. Track bus occupancy in real-time.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How It Works Section -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h2 class="text-center mb-4">How It Works</h2>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="display-1 text-primary">1</div>
+                    <h5>Create Account</h5>
+                    <p class="text-muted">Sign up with your university email</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="display-1 text-primary">2</div>
+                    <h5>Find Your Bus</h5>
+                    <p class="text-muted">View live location of all buses</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="display-1 text-primary">3</div>
+                    <h5>Get Alerts</h5>
+                    <p class="text-muted">Receive notifications when bus arrives</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="display-1 text-primary">4</div>
+                    <h5>Check-in & Ride</h5>
+                    <p class="text-muted">Scan QR code and enjoy your ride</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="row mt-5 bg-light p-4 rounded">
+        <div class="col-md-3 col-6 text-center">
+            <h3 class="display-4 text-primary">24/7</h3>
+            <p class="text-muted">Service Available</p>
+        </div>
+        <div class="col-md-3 col-6 text-center">
+            <h3 class="display-4 text-primary">10+</h3>
+            <p class="text-muted">Active Buses</p>
+        </div>
+        <div class="col-md-3 col-6 text-center">
+            <h3 class="display-4 text-primary">5</h3>
+            <p class="text-muted">Routes</p>
+        </div>
+        <div class="col-md-3 col-6 text-center">
+            <h3 class="display-4 text-primary">1000+</h3>
+            <p class="text-muted">Happy Students</p>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <div class="p-5 bg-primary text-white rounded">
+                <h2>Ready to never miss your bus again?</h2>
+                <p class="lead">Join hundreds of students already using Campus Bus</p>
+                {% if not session.user_id %}
+                    <!-- Fixed: Changed from 'register' to 'auth.register' -->
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg">
+                        <i class="fas fa-user-plus"></i> Sign Up Now
+                    </a>
+                {% else %}
+                    <a href="
+                        {% if session.user_type == 'student' %}
+                            {{ url_for('student.dashboard') }}
+                        {% elif session.user_type == 'driver' %}
+                            {{ url_for('driver.dashboard') }}
+                        {% elif session.user_type == 'admin' %}
+                            {{ url_for('admin.dashboard') }}
+                        {% endif %}
+                    " class="btn btn-light btn-lg">
+                        <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

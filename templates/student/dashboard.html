@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h1>Welcome, {{ session.full_name }}!</h1>
+            <p class="lead">Track your bus in real-time</p>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Live Bus Tracking</h5>
+                </div>
+                <div class="card-body">
+                    <div id="map" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Active Buses</h5>
+                </div>
+                <div class="card-body">
+                    <div id="bus-list">
+                        <p class="text-muted">Loading buses...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Initialize map
+    var map = L.map('map').setView([40.712776, -74.005974], 13);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+    
+    // Load live buses
+    fetch('/api/live-buses')
+        .then(response => response.json())
+        .then(buses => {
+            const busList = document.getElementById('bus-list');
+            if (buses.length === 0) {
+                busList.innerHTML = '<p class="text-muted">No active buses</p>';
+            } else {
+                let html = '';
+                buses.forEach(bus => {
+                    html += `<div class="mb-2 p-2 border rounded">
+                        <strong>Bus ${bus.bus_number}</strong><br>
+                        <small>Route: ${bus.route_name}</small><br>
+                        <small>Speed: ${bus.speed || 0} km/h</small>
+                    </div>`;
+                    
+                    // Add marker to map
+                    if (bus.latitude && bus.longitude) {
+                        L.marker([bus.latitude, bus.longitude])
+                            .bindPopup(`Bus ${bus.bus_number}<br>${bus.route_name}`)
+                            .addTo(map);
+                    }
+                });
+                busList.innerHTML = html;
+            }
+        });
+</script>
+{% endblock %}
