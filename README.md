@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Campus Bus Tracking System
 
 A real-time bus tracking web application for students and drivers to manage campus-residence transportation.
@@ -28,3 +29,7 @@ A real-time bus tracking web application for students and drivers to manage camp
 ```bash
 git clone https://github.com/konkeokuhle/campus-bus.git
 cd campus-bus
+=======
+# campus-bus
+Real-time campus bus tracking system
+>>>>>>> cf5ee9faafaace8f3e901e16bad7bffbb320d08e
