@@ -1,44 +1,47 @@
 {% extends "base.html" %}
+
 {% block title %}Home{% endblock %}
+
 {% block content %}
 <div class="container">
     <!-- Hero Section -->
-    <div class="jumbotron text-center py-5">
+    <div class="jumbotron text-center py-5 bg-primary text-white rounded-3 mb-4">
         <h1 class="display-4">🚌 Campus Bus Tracking System</h1>
         <p class="lead">Never miss your bus again! Track your campus shuttle in real-time.</p>
-        <hr class="my-4">
+        <hr class="my-4 bg-white">
         <p>Get real-time updates, arrival notifications, and more.</p>
         
         {% if not session.user_id %}
+            <!-- Show for non-authenticated users -->
             <div class="mt-4">
-                <!-- Fixed: Changed from 'register'/'login' to 'auth.register'/'auth.login' -->
-                <a class="btn btn-primary btn-lg me-2" href="{{ url_for('auth.register') }}" role="button">
+                <a class="btn btn-light btn-lg me-2" href="{{ url_for('auth.register') }}">
                     <i class="fas fa-user-plus"></i> Get Started
                 </a>
-                <a class="btn btn-outline-primary btn-lg" href="{{ url_for('auth.login') }}" role="button">
+                <a class="btn btn-outline-light btn-lg" href="{{ url_for('auth.login') }}">
                     <i class="fas fa-sign-in-alt"></i> Login
                 </a>
             </div>
         {% else %}
+            <!-- Show for authenticated users -->
             <div class="mt-4">
-                <a class="btn btn-primary btn-lg" href="
-                    {% if session.user_type == 'student' %}
-                        {{ url_for('student.dashboard') }}
-                    {% elif session.user_type == 'driver' %}
-                        {{ url_for('driver.dashboard') }}
-                    {% elif session.user_type == 'admin' %}
-                        {{ url_for('admin.dashboard') }}
-                    {% else %}
-                        {{ url_for('main.index') }}
-                    {% endif %}
-                " role="button">
-                    <i class="fas fa-tachometer-alt"></i> Go to Dashboard
-                </a>
+                {% if session.user_type == 'student' %}
+                    <a class="btn btn-light btn-lg" href="{{ url_for('student.dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Go to Student Dashboard
+                    </a>
+                {% elif session.user_type == 'driver' %}
+                    <a class="btn btn-light btn-lg" href="{{ url_for('driver.dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Go to Driver Dashboard
+                    </a>
+                {% elif session.user_type == 'admin' %}
+                    <a class="btn btn-light btn-lg" href="{{ url_for('admin.dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Go to Admin Dashboard
+                    </a>
+                {% endif %}
             </div>
         {% endif %}
     </div>
 
-    <!-- Features Section -->
+    <!-- Features Section - Visible to everyone -->
     <div class="row mt-5">
         <div class="col-md-4 mb-4">
             <div class="card h-100">
@@ -144,8 +147,8 @@
             <div class="p-5 bg-primary text-white rounded">
                 <h2>Ready to never miss your bus again?</h2>
                 <p class="lead">Join hundreds of students already using Campus Bus</p>
+                
                 {% if not session.user_id %}
-                    <!-- Fixed: Changed from 'register' to 'auth.register' -->
                     <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg">
                         <i class="fas fa-user-plus"></i> Sign Up Now
                     </a>

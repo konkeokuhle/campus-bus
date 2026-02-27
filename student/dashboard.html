@@ -1,65 +1,192 @@
 {% extends "base.html" %}
 {% block title %}Student Dashboard{% endblock %}
-{% block content %}
-<div class="row">
-    <div class="col-md-12 mb-4">
-        <h2>Welcome, {{ session.full_name }}!</h2>
-        <p class="lead">Track your bus in real-time</p>
-    </div>
-</div>
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Live Bus Tracking</h5>
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">🏠 Welcome, {{ session.full_name }}! <small class="text-muted">Track your bus in real-time</small></h2>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6>Active Buses</h6>
+                    <h3 id="total-active-buses">0</h3>
+                </div>
             </div>
-            <div class="card-body p-0">
-                <div id="map" style="height: 500px;"></div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6>Your Residence</h6>
+                    <h3 id="student-residence">Loading...</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6>Favorite Routes</h6>
+                    <h3 id="favorite-count">0</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h6>Total Trips</h6>
+                    <h3 id="total-trips">0</h3>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">Active Buses</h5>
+
+    <!-- Residence Filter -->
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label for="residence-filter" class="form-label"><i class="fas fa-building"></i> Filter by Residence:</label>
+            <select class="form-select" id="residence-filter" onchange="filterByResidence()">
+                <option value="">All Residences</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="route-filter" class="form-label"><i class="fas fa-route"></i> Filter by Route:</label>
+            <select class="form-select" id="route-filter" onchange="filterByRoute()">
+                <option value="">All Routes</option>
+            </select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button class="btn btn-outline-primary me-2" onclick="refreshData()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button class="btn btn-outline-success" onclick="centerOnCampus()">
+                <i class="fas fa-crosshairs"></i> Center Map
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Live Map -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-map-marked-alt"></i> LIVE BUS TRACKING</h5>
+                    <span class="badge bg-light text-dark" id="live-buses-count">0 buses active</span>
+                </div>
+                <div class="card-body p-0">
+                    <div id="map" style="height: 500px;"></div>
+                </div>
             </div>
-            <div class="card-body">
-                <div id="bus-list">
-                    <div class="text-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
+
+            <!-- Quick ETA Panel -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-clock"></i> QUICK ETA - POPULAR STOPS</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="quick-eta-stops">
+                        <div class="col-md-4 mb-2">
+                            <div class="d-flex justify-content-between p-2 border rounded">
+                                <span><i class="fas fa-map-pin text-primary"></i> Main Gate</span>
+                                <span class="badge bg-primary" id="eta-main-gate">...</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <div class="d-flex justify-content-between p-2 border rounded">
+                                <span><i class="fas fa-map-pin text-primary"></i> Library</span>
+                                <span class="badge bg-primary" id="eta-library">...</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <div class="d-flex justify-content-between p-2 border rounded">
+                                <span><i class="fas fa-map-pin text-primary"></i> Residences</span>
+                                <span class="badge bg-primary" id="eta-residences">...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <div class="card mt-3">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">Your Favorite Routes</h5>
+
+        <!-- Right Column - Bus Lists and Info -->
+        <div class="col-lg-4">
+            <!-- Active Buses Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-bus"></i> ACTIVE BUSES</h5>
+                    <span class="badge bg-light text-dark" id="active-buses-count">0</span>
+                </div>
+                <div class="card-body p-0" style="max-height: 300px; overflow-y: auto;">
+                    <div id="bus-list" class="list-group list-group-flush">
+                        <div class="text-center p-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <p class="text-muted">No favorite routes yet.</p>
-                <button class="btn btn-sm btn-outline-primary">Add Route</button>
+
+            <!-- Your Favorite Routes Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-star"></i> YOUR FAVORITE ROUTES</h5>
+                    <button class="btn btn-sm btn-outline-dark" onclick="addFavoriteRoute()">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="favorite-routes-list">
+                        <p class="text-muted text-center">No favorite routes yet.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Trips Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> RECENT TRIPS</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="recent-trips-list" class="list-group list-group-flush">
+                        <div class="text-center p-3 text-muted">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Residence Buses Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-building"></i> YOUR RESIDENCE BUSES</h5>
+                </div>
+                <div class="card-body">
+                    <div id="residence-buses-list">
+                        <p class="text-muted text-center">Loading residence info...</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
+<!-- Include Socket.IO for real-time updates -->
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script>
-    // Initialize map
-    var map = L.map('map').setView([40.712776, -74.005974], 13);
+    // ==================== GLOBAL VARIABLES ====================
+    let map;
+    let busMarkers = {};
+    let socket = io();
+    let allBuses = [];
+    let studentResidenceId = null;
+    let favoriteRoutes = [];
+    let recentTrips = [];
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(map);
-    
-    // Bus icons
-    var busIcon = L.icon({
+    // Bus icon for map
+    const busIcon = L.icon({
         iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
         shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
         iconSize: [25, 41],
@@ -67,83 +194,463 @@
         popupAnchor: [1, -34],
         shadowSize: [41, 41]
     });
-    
-    // Store bus markers
-    var busMarkers = {};
-    
-    // Connect to Socket.IO
-    var socket = io();
-    
-    // Load initial buses
-    fetch('/api/live-buses')
-        .then(response => response.json())
-        .then(buses => {
-            updateBusList(buses);
-            updateMapMarkers(buses);
-        });
-    
-    // Listen for real-time updates
-    socket.on('bus_location_updated', function(data) {
-        updateBusMarker(data);
+
+    // ==================== INITIALIZATION ====================
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeMap();
+        loadStudentData();
+        loadFilters();
+        loadResidenceBuses();
+        loadRecentTrips();
+        
+        // Join student room for real-time updates
+        socket.emit('join_student', { user_id: {{ session.user_id }} });
     });
-    
-    function updateBusList(buses) {
-        var busListHtml = '';
-        if (buses.length === 0) {
-            busListHtml = '<p class="text-muted">No active buses at the moment</p>';
+
+    // Socket event listeners
+    socket.on('bus_location_updated', function(data) {
+        updateBusLocation(data);
+        updateBusList();
+    });
+
+    socket.on('bus_arrived', function(data) {
+        showNotification(`🚏 Bus arriving at ${data.stop_name}`, 'success');
+        refreshData();
+    });
+
+    socket.on('bus_delayed', function(data) {
+        showNotification(`⚠️ Bus ${data.bus_number} delayed by ${data.delay} minutes`, 'warning');
+        refreshData();
+    });
+
+    socket.on('emergency_alert', function(data) {
+        showNotification(`🚨 EMERGENCY: ${data.message}`, 'danger');
+    });
+
+    socket.on('occupancy_updated', function(data) {
+        updateOccupancy(data);
+    });
+
+    // ==================== MAP FUNCTIONS ====================
+    function initializeMap() {
+        map = L.map('map').setView([-25.7461, 28.1881], 13); // Default to Pretoria/Unisa area
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+        
+        // Add campus bounds (you can adjust these coordinates)
+        var campusBounds = L.latLngBounds(
+            L.latLng(-25.7600, 28.1700), // Southwest
+            L.latLng(-25.7300, 28.2000)  // Northeast
+        );
+        
+        // Add a semi-transparent rectangle to highlight campus
+        L.rectangle(campusBounds, {
+            color: "#0d6efd",
+            weight: 1,
+            fillOpacity: 0.1
+        }).addTo(map);
+    }
+
+    function centerOnCampus() {
+        map.setView([-25.7461, 28.1881], 15);
+    }
+
+    function updateBusLocation(data) {
+        if (busMarkers[data.trip_id]) {
+            // Update existing marker
+            busMarkers[data.trip_id].setLatLng([data.latitude, data.longitude]);
+            busMarkers[data.trip_id].getPopup().setContent(`
+                <b>Bus ${data.bus_number}</b><br>
+                Route: ${data.route_name}<br>
+                Next: ${data.next_stop}<br>
+                Speed: ${data.speed} km/h<br>
+                Occupancy: ${data.occupancy || 0}/${data.capacity || 40}
+            `);
         } else {
-            buses.forEach(bus => {
+            // Create new marker
+            let marker = L.marker([data.latitude, data.longitude], {icon: busIcon})
+                .bindPopup(`
+                    <b>Bus ${data.bus_number}</b><br>
+                    Route: ${data.route_name}<br>
+                    Next: ${data.next_stop}<br>
+                    Speed: ${data.speed} km/h
+                `);
+            marker.addTo(map);
+            busMarkers[data.trip_id] = marker;
+        }
+    }
+
+    function updateMapMarkers(buses) {
+        // Clear old markers
+        Object.values(busMarkers).forEach(marker => map.removeLayer(marker));
+        busMarkers = {};
+        
+        // Add new markers
+        buses.forEach(bus => {
+            if (bus.latitude && bus.longitude) {
+                let marker = L.marker([bus.latitude, bus.longitude], {icon: busIcon})
+                    .bindPopup(`
+                        <b>Bus ${bus.bus_number}</b><br>
+                        Route: ${bus.route_name}<br>
+                        Next: ${bus.next_stop || 'Unknown'}<br>
+                        Speed: ${Math.round(bus.speed || 0)} km/h<br>
+                        <span class="text-${getOccupancyColor(bus.passenger_count, bus.capacity)}">
+                            Occupancy: ${bus.passenger_count || 0}/${bus.capacity || 40}
+                        </span>
+                    `);
+                marker.addTo(map);
+                busMarkers[bus.trip_id] = marker;
+            }
+        });
+        
+        document.getElementById('total-active-buses').textContent = buses.length;
+    }
+
+    // ==================== DATA LOADING FUNCTIONS ====================
+    function loadStudentData() {
+        fetch(`/api/student/stats/{{ session.user_id }}`)
+            .then(response => response.json())
+            .then(data => {
+                favoriteRoutes = data.favorite_routes || [];
+                recentTrips = data.recent_trips || [];
+                updateFavoriteRoutes();
+                updateRecentTrips();
+                document.getElementById('favorite-count').textContent = favoriteRoutes.length;
+                document.getElementById('total-trips').textContent = recentTrips.length;
+            })
+            .catch(error => console.error('Error loading student data:', error));
+    }
+
+    function loadFilters() {
+        // Load residences
+        fetch('/api/residences')
+            .then(response => response.json())
+            .then(residences => {
+                let residenceSelect = document.getElementById('residence-filter');
+                residenceSelect.innerHTML = '<option value="">All Residences</option>';
+                
+                residences.forEach(res => {
+                    residenceSelect.innerHTML += `<option value="${res.residence_id}">${res.residence_name}</option>`;
+                });
+            });
+        
+        // Load routes
+        fetch('/api/routes-list')
+            .then(response => response.json())
+            .then(routes => {
+                let routeSelect = document.getElementById('route-filter');
+                routeSelect.innerHTML = '<option value="">All Routes</option>';
+                
+                routes.forEach(route => {
+                    routeSelect.innerHTML += `<option value="${route.route_id}">${route.route_name}</option>`;
+                });
+            });
+    }
+
+    function loadResidenceBuses() {
+        // First, try to determine student's residence from their email domain or preferences
+        // For now, we'll show a sample or ask them to select
+        let residenceId = document.getElementById('residence-filter').value;
+        if (!residenceId) return;
+        
+        fetch(`/api/residence-buses/${residenceId}`)
+            .then(response => response.json())
+            .then(buses => {
+                let html = '';
+                buses.forEach(bus => {
+                    html += `
+                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                            <div>
+                                <strong>Bus ${bus.bus_number}</strong><br>
+                                <small>Driver: ${bus.driver_name || 'Unassigned'}</small>
+                            </div>
+                            <span class="badge bg-${bus.has_active_trip ? 'success' : 'secondary'}">
+                                ${bus.has_active_trip ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                    `;
+                });
+                document.getElementById('residence-buses-list').innerHTML = 
+                    html || '<p class="text-muted">No buses assigned to this residence</p>';
+            })
+            .catch(error => console.error('Error loading residence buses:', error));
+    }
+
+    function loadRecentTrips() {
+        fetch(`/api/student/recent-trips/{{ session.user_id }}`)
+            .then(response => response.json())
+            .then(trips => {
+                let html = '';
+                trips.forEach(trip => {
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <small class="text-muted">${trip.checkin_time}</small><br>
+                                    <strong>Bus ${trip.bus_number}</strong> - ${trip.route_name}<br>
+                                    <small>Boarded at: ${trip.stop_name}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                document.getElementById('recent-trips-list').innerHTML = 
+                    html || '<div class="text-center p-3 text-muted">No recent trips</div>';
+            })
+            .catch(error => console.error('Error loading recent trips:', error));
+    }
+
+    function updateFavoriteRoutes() {
+        let html = '';
+        favoriteRoutes.forEach(route => {
+            html += `
+                <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                    <div>
+                        <i class="fas fa-star text-warning"></i>
+                        <strong>${route.route_name}</strong>
+                    </div>
+                    <div>
+                        <small class="text-muted me-2">ETA: <span id="eta-route-${route.route_id}">...</span></small>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeFavorite(${route.route_id})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        document.getElementById('favorite-routes-list').innerHTML = 
+            html || '<p class="text-muted text-center">No favorite routes yet.</p>';
+    }
+
+    // ==================== BUS LIST FUNCTIONS ====================
+    function loadBuses() {
+        let residenceId = document.getElementById('residence-filter').value;
+        let routeId = document.getElementById('route-filter').value;
+        
+        let url = '/api/live-buses';
+        let params = new URLSearchParams();
+        if (residenceId) params.append('residence_id', residenceId);
+        if (routeId) params.append('route_id', routeId);
+        if (params.toString()) url += '?' + params.toString();
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                allBuses = data.buses || data;
+                updateBusList();
+                updateMapMarkers(allBuses);
+                updateStats(data.residence_stats);
+                updateQuickETA();
+            })
+            .catch(error => console.error('Error loading buses:', error));
+    }
+
+    function updateBusList() {
+        let busListHtml = '';
+        if (allBuses.length === 0) {
+            busListHtml = '<div class="text-center p-4"><p class="text-muted">No active buses at the moment</p></div>';
+        } else {
+            allBuses.forEach(bus => {
+                let occupancyPercent = ((bus.passenger_count || 0) / (bus.capacity || 40)) * 100;
+                let occupancyColor = getOccupancyColor(bus.passenger_count, bus.capacity);
+                
                 busListHtml += `
-                    <div class="card mb-2">
-                        <div class="card-body py-2">
-                            <h6 class="mb-1">🚌 ${bus.bus_number}</h6>
-                            <small class="text-muted d-block">Route: ${bus.route || 'Unknown'}</small>
-                            <small class="text-muted d-block">Next: ${bus.next_stop || 'Unknown'}</small>
-                            <small class="text-success">Speed: ${bus.speed || 0} km/h</small>
+                    <div class="list-group-item bus-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">
+                                    <i class="fas fa-bus"></i> Bus ${bus.bus_number}
+                                    <span class="badge bg-${bus.trip_status === 'in_progress' ? 'success' : 'secondary'} ms-2">
+                                        ${bus.trip_status === 'in_progress' ? 'Moving' : 'Scheduled'}
+                                    </span>
+                                </h6>
+                                <small class="text-muted d-block">Route: ${bus.route_name || 'Unknown'}</small>
+                                <small class="text-muted d-block">Next: ${bus.next_stop || 'Unknown'}</small>
+                                <small class="text-muted d-block">Residence: ${bus.residence_name || 'Unknown'}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary mb-1">${Math.round(bus.speed || 0)} km/h</span><br>
+                                <small class="text-${occupancyColor}">${bus.passenger_count || 0}/${bus.capacity || 40}</small>
+                            </div>
+                        </div>
+                        <div class="progress mt-2" style="height: 5px;">
+                            <div class="progress-bar bg-${occupancyColor}" 
+                                 style="width: ${occupancyPercent}%"></div>
                         </div>
                     </div>
                 `;
             });
         }
         document.getElementById('bus-list').innerHTML = busListHtml;
+        document.getElementById('live-buses-count').textContent = `${allBuses.length} buses active`;
+        document.getElementById('active-buses-count').textContent = allBuses.length;
     }
-    
-    function updateMapMarkers(buses) {
-        // Clear existing markers
-        for (var id in busMarkers) {
-            map.removeLayer(busMarkers[id]);
-        }
-        busMarkers = {};
-        
-        // Add new markers
-        buses.forEach(bus => {
-            if (bus.latitude && bus.longitude) {
-                var marker = L.marker([bus.latitude, bus.longitude], {icon: busIcon})
-                    .bindPopup(`
-                        <b>${bus.bus_number}</b><br>
-                        Route: ${bus.route}<br>
-                        Next: ${bus.next_stop}<br>
-                        Speed: ${bus.speed} km/h
-                    `);
-                marker.addTo(map);
-                busMarkers[bus.bus_id] = marker;
+
+    function updateStats(stats) {
+        if (stats) {
+            let totalBuses = stats.reduce((sum, res) => sum + (res.total_buses || 0), 0);
+            document.getElementById('total-active-buses').textContent = totalBuses;
+            
+            // Find student's residence stats if we know their residence
+            if (studentResidenceId) {
+                let studentRes = stats.find(r => r.residence_id == studentResidenceId);
+                if (studentRes) {
+                    document.getElementById('student-residence').textContent = studentRes.residence_name;
+                }
             }
+        }
+    }
+
+    // ==================== FILTER FUNCTIONS ====================
+    function filterByResidence() {
+        loadBuses();
+        loadResidenceBuses();
+    }
+
+    function filterByRoute() {
+        loadBuses();
+    }
+
+    function refreshData() {
+        loadBuses();
+        loadRecentTrips();
+        loadStudentData();
+    }
+
+    // ==================== ETA FUNCTIONS ====================
+    function updateQuickETA() {
+        // Update ETA for popular stops
+        let stops = [
+            { id: 1, name: 'Main Gate', elementId: 'eta-main-gate' },
+            { id: 2, name: 'Library', elementId: 'eta-library' },
+            { id: 3, name: 'Residences', elementId: 'eta-residences' }
+        ];
+        
+        stops.forEach(stop => {
+            // Find closest bus to this stop
+            let minEta = 'N/A';
+            allBuses.forEach(bus => {
+                // This would need actual stop coordinates
+                // For now, show sample ETAs
+                if (bus.trip_id) {
+                    minEta = Math.floor(Math.random() * 10) + 2 + ' min';
+                }
+            });
+            document.getElementById(stop.elementId).textContent = minEta;
         });
     }
-    
-    function updateBusMarker(data) {
-        if (busMarkers[data.bus_id]) {
-            busMarkers[data.bus_id].setLatLng([data.latitude, data.longitude]);
+
+    // ==================== UTILITY FUNCTIONS ====================
+    function getOccupancyColor(count, capacity) {
+        let percent = ((count || 0) / (capacity || 40)) * 100;
+        if (percent < 50) return 'success';
+        if (percent < 80) return 'warning';
+        return 'danger';
+    }
+
+    function updateOccupancy(data) {
+        // Update occupancy display for a specific bus
+        refreshData();
+    }
+
+    function showNotification(message, type) {
+        // Create toast notification
+        let toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type} border-0 position-fixed top-0 end-0 m-3`;
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        
+        let bsToast = new bootstrap.Toast(toast, { autohide: true, delay: 5000 });
+        bsToast.show();
+        
+        toast.addEventListener('hidden.bs.toast', function() {
+            document.body.removeChild(toast);
+        });
+    }
+
+    function addFavoriteRoute() {
+        // Show route selection modal
+        let routeId = prompt('Enter Route ID to add to favorites:');
+        if (routeId) {
+            fetch('/api/student/add-favorite', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    student_id: {{ session.user_id }},
+                    route_id: parseInt(routeId)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Route added to favorites!', 'success');
+                    loadStudentData();
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
     }
-    
-    // Refresh bus list every 10 seconds
+
+    function removeFavorite(routeId) {
+        fetch('/api/student/remove-favorite', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                student_id: {{ session.user_id }},
+                route_id: routeId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Route removed from favorites', 'info');
+                loadStudentData();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    // Refresh bus list every 30 seconds
     setInterval(() => {
-        fetch('/api/live-buses')
-            .then(response => response.json())
-            .then(buses => {
-                updateBusList(buses);
-            });
-    }, 10000);
+        loadBuses();
+    }, 30000);
 </script>
+
+<style>
+    .bus-item {
+        transition: all 0.3s ease;
+    }
+    .bus-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+    }
+    .progress {
+        border-radius: 3px;
+    }
+    #map {
+        border-radius: 0 0 5px 5px;
+    }
+    .toast {
+        min-width: 250px;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .badge {
+        font-size: 0.85em;
+    }
+</style>
 {% endblock %}

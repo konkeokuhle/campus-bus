@@ -1,0 +1,65 @@
+{% if session.user_type != 'student' %}
+    <script>window.location.href = "{{ url_for('main.index') }}";</script>
+{% endif %}
+{% extends "base.html" %}
+{% block title %}My Favorite Routes{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4"><i class="fas fa-star text-warning"></i> My Favorite Routes</h2>
+    
+    {% if favorites %}
+    <div class="row">
+        {% for route in favorites %}
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="card-title">
+                                <i class="fas fa-route text-primary"></i> {{ route.route_name }}
+                            </h5>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    Code: {{ route.route_code }} | 
+                                    Duration: {{ route.estimated_duration }} min |
+                                    Today's trips: {{ route.today_trips }}
+                                </small>
+                            </p>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeFavorite({{ route.route_id }})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> You haven't added any favorite routes yet.
+        <a href="{{ url_for('main.index') }}" class="alert-link">Browse routes</a> to add some!
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function removeFavorite(routeId) {
+    if(confirm('Remove this route from favorites?')) {
+        fetch(`/student/favorites/remove/${routeId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

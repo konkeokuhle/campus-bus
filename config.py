@@ -15,11 +15,20 @@ class Config:
     MYSQL_PORT = int(os.getenv('MYSQL_PORT', 3306))
     MYSQL_CURSORCLASS = 'DictCursor'
     
+    # PyMySQL specific settings - ADD THESE LINES
+    MYSQL_USE_UNICODE = True
+    MYSQL_CHARSET = 'utf8mb4'
+    MYSQL_CONNECT_TIMEOUT = 10
+    
+    # Alternative SQLAlchemy style URI (useful for some extensions)
+    SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}"
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
     # Flask configuration
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key-do-not-use-in-production')
     DEBUG = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
     
-    # Session configuration - ADD THESE LINES
+    # Session configuration
     SESSION_TYPE = 'filesystem'  # This tells Flask how to store sessions
     SESSION_PERMANENT = False
     SESSION_USE_SIGNER = True  # Sign the session cookie for security
@@ -40,15 +49,17 @@ class Config:
         print("🔧 CAMPUS BUS CONFIGURATION")
         print("="*60)
         print(f"SECRET_KEY: {'✅ SET' if cls.SECRET_KEY else '❌ NOT SET'}")
-        print(f"  └─ Value: {cls.SECRET_KEY[:10]}...")
+        print(f"  └─ First 10 chars: {cls.SECRET_KEY[:10]}...")
         print(f"\n📊 SESSION:")
         print(f"  ├─ SESSION_TYPE: {cls.SESSION_TYPE}")
         print(f"  ├─ SESSION_PERMANENT: {cls.SESSION_PERMANENT}")
         print(f"  └─ SESSION_USE_SIGNER: {cls.SESSION_USE_SIGNER}")
         
-        print(f"\n🗄️  DATABASE:")
+        print(f"\n🗄️  DATABASE (PyMySQL):")
         print(f"  ├─ Host: {cls.MYSQL_HOST}")
         print(f"  ├─ User: {cls.MYSQL_USER}")
         print(f"  ├─ Database: {cls.MYSQL_DB}")
-        print(f"  └─ Port: {cls.MYSQL_PORT}")
+        print(f"  ├─ Port: {cls.MYSQL_PORT}")
+        print(f"  ├─ Charset: {cls.MYSQL_CHARSET}")
+        print(f"  └─ Connect Timeout: {cls.MYSQL_CONNECT_TIMEOUT}s")
         print("="*60 + "\n")

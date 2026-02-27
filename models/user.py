@@ -1,13 +1,12 @@
 # models/user.py
-from flask import session
+# models/user.py
+from flask import session, g
 from werkzeug.security import generate_password_hash, check_password_hash
-from app import mysql
-import MySQLdb.cursors
 
 class User:
     @staticmethod
     def get_by_id(user_id):
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = g.db.cursor()
         cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
         user = cursor.fetchone()
         cursor.close()
@@ -15,7 +14,7 @@ class User:
     
     @staticmethod
     def get_by_email(email):
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = g.db.cursor()
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
         cursor.close()
@@ -24,17 +23,17 @@ class User:
     @staticmethod
     def create(email, password, full_name, phone_number, user_type='student'):
         password_hash = generate_password_hash(password)
-        cursor = mysql.connection.cursor()
+        cursor = g.db.cursor()
         try:
             cursor.execute("""
                 INSERT INTO users (email, password_hash, full_name, phone_number, user_type)
                 VALUES (%s, %s, %s, %s, %s)
             """, (email, password_hash, full_name, phone_number, user_type))
-            mysql.connection.commit()
+            g.db.commit()
             user_id = cursor.lastrowid
             return user_id
         except Exception as e:
-            mysql.connection.rollback()
+            g.db.rollback()
             raise e
         finally:
             cursor.close()
@@ -48,9 +47,9 @@ class User:
     
     @staticmethod
     def update_last_login(user_id):
-        cursor = mysql.connection.cursor()
+        cursor = g.db.cursor()
         cursor.execute("UPDATE users SET last_login = NOW() WHERE user_id = %s", (user_id,))
-        mysql.connection.commit()
+        g.db.commit()
         cursor.close()
     
     @staticmethod

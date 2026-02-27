@@ -1,41 +1,52 @@
-# .gitignore
-# Python
+# =========================
+# PYTHON
+# =========================
 __pycache__/
 *.py[cod]
+*$py.class
 *.so
 .Python
+
+# Virtual Environments
 env/
 venv/
 ENV/
+.venv/
 env.bak/
 venv.bak/
 
-# Flask
+# =========================
+# FLASK
+# =========================
 instance/
 .webassets-cache
-.env
-.flaskenv
 
-# Database
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# =========================
+# DATABASE
+# =========================
 *.db
 *.sqlite3
 *.sqlite
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Logs
+# =========================
+# LOGS
+# =========================
 logs/
 *.log
 
-# Uploads
+# =========================
+# UPLOADS (user files)
+# =========================
 static/uploads/
 
-# Test coverage
+# =========================
+# TESTING & COVERAGE
+# =========================
 htmlcov/
 .tox/
 .coverage
@@ -47,17 +58,25 @@ coverage.xml
 *.py,cover
 .pytest_cache/
 
-# Distribution
+# =========================
+# BUILD / DISTRIBUTION
+# =========================
 dist/
 build/
 *.egg-info/
+.eggs/
 
-# Environment variables
-.env
-.env.local
-.env.development
-.env.production
+# =========================
+# IDE / EDITORS
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# OS
+# =========================
+# OS FILES
+# =========================
 .DS_Store
 Thumbs.db

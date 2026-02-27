@@ -1,12 +1,11 @@
 # models/trip.py
-from app import mysql
-import MySQLdb.cursors
+from flask import g
 from datetime import datetime
 
 class Trip:
     @staticmethod
     def get_active_trips():
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = g.db.cursor()
         cursor.execute("""
             SELECT t.*, b.bus_number, r.route_name, 
                    cs.stop_name as current_stop_name,
@@ -28,7 +27,7 @@ class Trip:
     
     @staticmethod
     def get_by_driver(driver_id):
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = g.db.cursor()
         cursor.execute("""
             SELECT t.*, b.bus_number, r.route_name
             FROM trips t
@@ -43,51 +42,51 @@ class Trip:
     
     @staticmethod
     def start_trip(trip_id):
-        cursor = mysql.connection.cursor()
+        cursor = g.db.cursor()
         cursor.execute("""
             UPDATE trips 
             SET trip_status = 'in_progress', actual_start_time = NOW() 
             WHERE trip_id = %s
         """, (trip_id,))
-        mysql.connection.commit()
+        g.db.commit()
         cursor.close()
     
     @staticmethod
     def complete_trip(trip_id):
-        cursor = mysql.connection.cursor()
+        cursor = g.db.cursor()
         cursor.execute("""
             UPDATE trips 
             SET trip_status = 'completed', actual_end_time = NOW() 
             WHERE trip_id = %s
         """, (trip_id,))
-        mysql.connection.commit()
+        g.db.commit()
         cursor.close()
     
     @staticmethod
     def update_current_stop(trip_id, stop_id):
-        cursor = mysql.connection.cursor()
+        cursor = g.db.cursor()
         cursor.execute("""
             UPDATE trips 
             SET current_stop_id = %s 
             WHERE trip_id = %s
         """, (stop_id, trip_id))
-        mysql.connection.commit()
+        g.db.commit()
         cursor.close()
 
 class LiveLocation:
     @staticmethod
     def update_location(trip_id, latitude, longitude, speed=0, heading=0):
-        cursor = mysql.connection.cursor()
+        cursor = g.db.cursor()
         cursor.execute("""
             INSERT INTO live_locations (trip_id, latitude, longitude, speed, heading)
             VALUES (%s, %s, %s, %s, %s)
         """, (trip_id, latitude, longitude, speed, heading))
-        mysql.connection.commit()
+        g.db.commit()
         cursor.close()
     
     @staticmethod
     def get_latest_for_trip(trip_id):
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = g.db.cursor()
         cursor.execute("""
             SELECT * FROM live_locations 
             WHERE trip_id = %s 
@@ -100,7 +99,7 @@ class LiveLocation:
     
     @staticmethod
     def get_recent_locations(trip_id, limit=10):
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = g.db.cursor()
         cursor.execute("""
             SELECT * FROM live_locations 
             WHERE trip_id = %s 
@@ -114,19 +113,19 @@ class LiveLocation:
 class StopNotification:
     @staticmethod
     def create(trip_id, stop_id, notification_type, departure_countdown=None):
-        cursor = mysql.connection.cursor()
+        cursor = g.db.cursor()
         cursor.execute("""
             INSERT INTO stop_notifications (trip_id, stop_id, notification_type, departure_countdown)
             VALUES (%s, %s, %s, %s)
         """, (trip_id, stop_id, notification_type, departure_countdown))
-        mysql.connection.commit()
+        g.db.commit()
         notification_id = cursor.lastrowid
         cursor.close()
         return notification_id
     
     @staticmethod
     def mark_sent(notification_id):
-        cursor = mysql.connection.cursor()
+        cursor = g.db.cursor()
         cursor.execute("UPDATE stop_notifications SET notification_sent = TRUE WHERE notification_id = %s", (notification_id,))
-        mysql.connection.commit()
+        g.db.commit()
         cursor.close()

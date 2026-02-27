@@ -1,38 +1,661 @@
 {% extends "base.html" %}
 {% block title %}Driver Dashboard{% endblock %}
+
 {% block content %}
-<div class="container">
+<div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <h1>Welcome, {{ session.full_name }}!</h1>
-            <p class="lead">Driver Dashboard</p>
+            <h2 class="mb-4">🚌 Driver Dashboard <small class="text-muted">Welcome, {{ session.full_name }}!</small></h2>
         </div>
     </div>
-    
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Today's Trips</h5>
-                </div>
+
+    <!-- Residence Info Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-info text-white">
                 <div class="card-body">
-                    <p class="text-muted">No trips scheduled for today.</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0"><i class="fas fa-building"></i> Your Residence: <span id="residence-name">Loading...</span></h5>
+                            <small id="residence-bus-range"></small>
+                        </div>
+                        <div>
+                            <span class="badge bg-light text-dark" id="total-buses">0 Buses</span>
+                            <span class="badge bg-light text-dark ms-2" id="active-drivers">0 Drivers</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">Quick Actions</h5>
+    </div>
+
+    <!-- No Active Trip Alert (shown when no trip is in progress) -->
+    <div class="row mb-4" id="no-trip-alert" style="display: none;">
+        <div class="col-12">
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> 
+                You don't have an active trip. <a href="{{ url_for('driver.trip_management') }}" class="alert-link">Start a trip</a> from your trip management page.
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Trip Section -->
+    <div class="row mb-4" id="current-trip-section">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-bus"></i> CURRENT TRIP: <span id="current-trip-name">Loading...</span></h5>
+                    <button class="btn btn-sm btn-light" onclick="endTrip()" id="end-trip-btn">End Trip</button>
                 </div>
                 <div class="card-body">
-                    <button class="btn btn-primary w-100 mb-2">Start Trip</button>
-                    <button class="btn btn-warning w-100 mb-2">Report Delay</button>
-                    <button class="btn btn-danger w-100">Emergency</button>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>NEXT STOP</h6>
+                                    <h3 id="next-stop-name">Loading...</h3>
+                                    <p class="text-muted" id="next-stop-eta">ETA: Calculating...</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>STATUS</h6>
+                                    <p><span class="badge bg-success" id="trip-status">In Progress</span></p>
+                                    <p><small id="delay-info" class="text-warning"></small></p>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="btn-group flex-wrap" role="group">
+                                        <button class="btn btn-success" id="arrived-btn" onclick="markArrived()" disabled>
+                                            <i class="fas fa-flag-checkered"></i> 🚏 ARRIVED AT STOP
+                                        </button>
+                                        <button class="btn btn-warning" id="delay-btn" onclick="reportDelay()">
+                                            <i class="fas fa-clock"></i> ⚠️ REPORT DELAY
+                                        </button>
+                                        <button class="btn btn-danger" id="emergency-btn" onclick="emergencyAlert()">
+                                            <i class="fas fa-exclamation-triangle"></i> 🆘 EMERGENCY
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div id="trip-map" style="height: 150px; background: #e9ecef; border-radius: 5px;"></div>
+                            <p class="text-center mt-2"><small class="text-muted">Live tracking active</small></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Upcoming Stops -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> UPCOMING STOPS</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group" id="upcoming-stops-list">
+                        <div class="text-center p-3 text-muted">Loading stops...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Passenger Count Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> PASSENGER COUNT</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h3 id="current-passengers">0</h3>
+                            <small class="text-muted">Current</small>
+                        </div>
+                        <div class="col-6">
+                            <h3 id="max-capacity">40</h3>
+                            <small class="text-muted">Max Capacity</small>
+                        </div>
+                    </div>
+                    <div class="progress mt-2 mb-3" style="height: 20px;">
+                        <div id="occupancy-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%;">0%</div>
+                    </div>
+                    <div class="btn-group w-100" role="group">
+                        <button class="btn btn-outline-primary" onclick="updatePassenger('add')">
+                            <i class="fas fa-plus"></i> Boarding
+                        </button>
+                        <button class="btn btn-outline-warning" onclick="updatePassenger('remove')">
+                            <i class="fas fa-minus"></i> Alighting
+                        </button>
+                        <button class="btn btn-outline-success" onclick="updatePassenger('update')">
+                            <i class="fas fa-check"></i> Update
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Drivers Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> OTHER DRIVERS IN RESIDENCE</h5>
+                </div>
+                <div class="card-body">
+                    <div id="other-drivers-list">
+                        <div class="text-center text-muted">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Map and Controls -->
+        <div class="col-md-8">
+            <!-- Live Tracking Map -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-map-marked-alt"></i> LIVE TRACKING - YOUR LOCATION</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="driver-map" style="height: 350px;"></div>
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <small><i class="fas fa-satellite-dish"></i> GPS: <span id="gps-status">Waiting...</span></small>
+                        </div>
+                        <div class="col-md-4">
+                            <small><i class="fas fa-tachometer-alt"></i> Speed: <span id="current-speed">0</span> km/h</small>
+                        </div>
+                        <div class="col-md-4">
+                            <small><i class="fas fa-location-dot"></i> Accuracy: <span id="gps-accuracy">0</span> m</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trip Statistics -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> TRIP STATISTICS</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 col-6">
+                            <div class="text-center">
+                                <h5 id="start-time">--:--</h5>
+                                <small class="text-muted">Started</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-center">
+                                <h5 id="trip-duration">0 min</h5>
+                                <small class="text-muted">Duration</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-center">
+                                <h5 id="distance-covered">0 km</h5>
+                                <small class="text-muted">Distance</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-center">
+                                <h5 id="avg-speed">0 km/h</h5>
+                                <small class="text-muted">Avg Speed</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Include Leaflet for maps -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Include Socket.IO for real-time updates -->
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+<script>
+    // Initialize variables
+    let socket = io();
+    let map;
+    let marker;
+    let watchId;
+    let currentTripId = null;
+    let updateInterval;
+    let totalDistance = 0;
+    let lastPosition = null;
+    let startTime = null;
+    let speedHistory = [];
+    
+    // Join driver room
+    socket.on('connect', function() {
+        console.log('Connected to server');
+        socket.emit('join_driver', { driver_id: {{ session.user_id }} });
+    });
+
+    // Load initial data
+    document.addEventListener('DOMContentLoaded', function() {
+        loadResidenceInfo();
+        loadCurrentTrip();
+        initializeGPS();
+    });
+
+    // Load residence information
+    function loadResidenceInfo() {
+        fetch('/api/driver-residence-info')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.error) {
+                    document.getElementById('residence-name').textContent = data.residence_name;
+                    document.getElementById('residence-bus-range').textContent = 
+                        `Bus Range: ${data.bus_number_start} - ${data.bus_number_end}`;
+                    document.getElementById('total-buses').textContent = `${data.total_buses} Buses`;
+                    
+                    // Load other drivers
+                    if (data.other_drivers) {
+                        let html = '';
+                        data.other_drivers.forEach(driver => {
+                            html += `
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <strong>${driver.full_name}</strong><br>
+                                        <small>Bus ${driver.bus_number}</small>
+                                    </div>
+                                    <span class="badge bg-${driver.bus_status === 'active' ? 'success' : 'secondary'}">
+                                        ${driver.bus_status}
+                                    </span>
+                                </div>
+                            `;
+                        });
+                        document.getElementById('other-drivers-list').innerHTML = html || '<p class="text-muted">No other drivers</p>';
+                    }
+                }
+            })
+            .catch(error => console.error('Error loading residence info:', error));
+    }
+
+    // Load current trip
+    function loadCurrentTrip() {
+        fetch('/api/driver-current-trip')
+            .then(response => response.json())
+            .then(data => {
+                if (data.trip) {
+                    currentTripId = data.trip.trip_id;
+                    displayCurrentTrip(data.trip);
+                    loadUpcomingStops(data.trip.route_id, data.trip.current_stop_order || 0);
+                    document.getElementById('no-trip-alert').style.display = 'none';
+                    document.getElementById('current-trip-section').style.display = 'block';
+                    
+                    // Enable arrived button
+                    document.getElementById('arrived-btn').disabled = false;
+                    
+                    // Start sending location updates
+                    startLocationUpdates();
+                } else {
+                    // No active trip
+                    document.getElementById('no-trip-alert').style.display = 'block';
+                    document.getElementById('current-trip-section').style.display = 'none';
+                }
+            })
+            .catch(error => console.error('Error loading trip:', error));
+    }
+
+    // Display current trip information
+    function displayCurrentTrip(trip) {
+        document.getElementById('current-trip-name').textContent = 
+            `Bus ${trip.bus_number} - ${trip.route_name}`;
+        document.getElementById('next-stop-name').textContent = trip.next_stop_name || 'Unknown';
+        document.getElementById('next-stop-eta').textContent = 
+            trip.eta ? `ETA: ${trip.eta} minutes` : 'ETA: Calculating...';
+        
+        if (trip.delay_minutes > 0) {
+            document.getElementById('delay-info').textContent = 
+                `Delayed by ${trip.delay_minutes} minutes`;
+        }
+        
+        // Update passenger count
+        document.getElementById('current-passengers').textContent = trip.passenger_count || 0;
+        document.getElementById('max-capacity').textContent = trip.capacity || 40;
+        updateOccupancyBar();
+        
+        // Update start time
+        if (trip.actual_start_time) {
+            startTime = new Date(trip.actual_start_time);
+            document.getElementById('start-time').textContent = 
+                startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+    }
+
+    // Load upcoming stops
+    function loadUpcomingStops(routeId, currentOrder) {
+        fetch(`/api/route-stops/${routeId}`)
+            .then(response => response.json())
+            .then(stops => {
+                let html = '';
+                stops.forEach((stop, index) => {
+                    if (stop.stop_order > currentOrder) {
+                        html += `
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="badge bg-${index === 0 ? 'success' : 'secondary'} me-2">
+                                            ${stop.stop_order}.
+                                        </span>
+                                        <strong>${stop.stop_name}</strong>
+                                    </div>
+                                    <span class="badge bg-primary">
+                                        ${stop.estimated_time_from_prev || '?'} min
+                                    </span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                document.getElementById('upcoming-stops-list').innerHTML = 
+                    html || '<div class="text-center p-3">End of route</div>';
+            })
+            .catch(error => console.error('Error loading stops:', error));
+    }
+
+    // Initialize GPS tracking
+    function initializeGPS() {
+        if (!navigator.geolocation) {
+            alert('GPS is not supported by your browser');
+            return;
+        }
+        
+        // Initialize map
+        map = L.map('driver-map').setView([0, 0], 15);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+        
+        // Custom bus icon
+        const busIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34]
+        });
+        
+        marker = L.marker([0, 0], { icon: busIcon }).addTo(map);
+        
+        // Start watching position
+        watchId = navigator.geolocation.watchPosition(
+            position => updatePosition(position),
+            error => console.error('GPS error:', error),
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+        );
+        
+        document.getElementById('gps-status').textContent = 'Active';
+    }
+
+    // Update position from GPS
+    function updatePosition(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+        const speed = position.coords.speed ? (position.coords.speed * 3.6) : 0; // Convert m/s to km/h
+        
+        // Update map
+        marker.setLatLng([lat, lng]);
+        map.setView([lat, lng]);
+        
+        // Update UI
+        document.getElementById('current-speed').textContent = Math.round(speed);
+        document.getElementById('gps-accuracy').textContent = Math.round(accuracy);
+        
+        // Calculate distance traveled
+        if (lastPosition) {
+            const distance = calculateDistance(
+                lastPosition.lat, lastPosition.lng,
+                lat, lng
+            );
+            totalDistance += distance;
+            document.getElementById('distance-covered').textContent = totalDistance.toFixed(1) + ' km';
+        }
+        
+        lastPosition = { lat, lng };
+        
+        // Track speed for average
+        if (speed > 0) {
+            speedHistory.push(speed);
+            if (speedHistory.length > 60) speedHistory.shift(); // Keep last minute
+            
+            const avgSpeed = speedHistory.reduce((a, b) => a + b, 0) / speedHistory.length;
+            document.getElementById('avg-speed').textContent = Math.round(avgSpeed) + ' km/h';
+        }
+        
+        // Update duration
+        if (startTime) {
+            const duration = Math.round((new Date() - startTime) / 60000); // minutes
+            document.getElementById('trip-duration').textContent = duration + ' min';
+        }
+        
+        // Send location to server if trip is active
+        if (currentTripId) {
+            fetch('/driver/api/update-location', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    trip_id: currentTripId,
+                    latitude: lat,
+                    longitude: lng,
+                    speed: speed,
+                    heading: position.coords.heading || 0
+                })
+            });
+        }
+    }
+
+    // Calculate distance between two coordinates (km)
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    // Start sending location updates periodically
+    function startLocationUpdates() {
+        if (updateInterval) clearInterval(updateInterval);
+        
+        // Update every 5 seconds
+        updateInterval = setInterval(() => {
+            if (currentTripId && lastPosition) {
+                fetch('/driver/api/update-location', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        trip_id: currentTripId,
+                        latitude: lastPosition.lat,
+                        longitude: lastPosition.lng,
+                        speed: parseFloat(document.getElementById('current-speed').textContent)
+                    })
+                });
+            }
+        }, 5000);
+    }
+
+    // Mark arrived at stop
+    function markArrived() {
+        if (!currentTripId) return;
+        
+        if (confirm('Mark as arrived at current stop?')) {
+            fetch('/driver/api/arrived', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ trip_id: currentTripId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ Arrival recorded!');
+                    loadCurrentTrip(); // Reload trip data
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    }
+
+    // Report delay
+    function reportDelay() {
+        if (!currentTripId) return;
+        
+        let minutes = prompt('Enter delay in minutes:', '5');
+        if (minutes) {
+            fetch('/driver/api/delay', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    trip_id: currentTripId,
+                    delay_minutes: parseInt(minutes)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ Delay reported');
+                    document.getElementById('delay-info').textContent = 
+                        `Delayed by ${minutes} minutes`;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    }
+
+    // Emergency alert
+    function emergencyAlert() {
+        if (!currentTripId) return;
+        
+        if (confirm('🚨 EMERGENCY: Send alert to all students and admin?')) {
+            fetch('/driver/api/emergency', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ trip_id: currentTripId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('🚨 Emergency alert sent! Help is on the way.');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    }
+
+    // End trip
+    function endTrip() {
+        if (!currentTripId) return;
+        
+        if (confirm('End current trip?')) {
+            fetch(`/driver/api/complete-trip/${currentTripId}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ Trip completed');
+                    currentTripId = null;
+                    loadCurrentTrip(); // Reload to show no trip
+                    
+                    // Stop location updates
+                    if (updateInterval) {
+                        clearInterval(updateInterval);
+                        updateInterval = null;
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    }
+
+    // Update passenger count
+    function updatePassenger(action) {
+        if (!currentTripId) return;
+        
+        let current = parseInt(document.getElementById('current-passengers').innerText);
+        let max = parseInt(document.getElementById('max-capacity').innerText);
+        let newCount = current;
+        
+        if (action === 'add' && current < max) {
+            newCount = current + 1;
+        } else if (action === 'remove' && current > 0) {
+            newCount = current - 1;
+        } else if (action === 'update') {
+            let input = prompt('Enter current passenger count:', current);
+            if (input) {
+                newCount = parseInt(input);
+                if (isNaN(newCount) || newCount < 0 || newCount > max) {
+                    alert('Invalid count');
+                    return;
+                }
+            } else {
+                return;
+            }
+        } else {
+            return;
+        }
+        
+        // Update UI
+        document.getElementById('current-passengers').innerText = newCount;
+        updateOccupancyBar();
+        
+        // Send to server
+        fetch('/driver/api/passenger-count', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                trip_id: currentTripId,
+                count: newCount
+            })
+        });
+    }
+
+    // Update occupancy bar
+    function updateOccupancyBar() {
+        let current = parseInt(document.getElementById('current-passengers').innerText);
+        let max = parseInt(document.getElementById('max-capacity').innerText);
+        let percentage = (current / max) * 100;
+        
+        let bar = document.getElementById('occupancy-bar');
+        bar.style.width = percentage + '%';
+        bar.innerText = Math.round(percentage) + '%';
+        
+        // Change color based on occupancy
+        bar.className = 'progress-bar';
+        if (percentage < 50) {
+            bar.classList.add('bg-success');
+        } else if (percentage < 80) {
+            bar.classList.add('bg-warning');
+        } else {
+            bar.classList.add('bg-danger');
+        }
+    }
+
+    // Helper function to get current trip ID
+    function getCurrentTripId() {
+        return currentTripId;
+    }
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', function() {
+        if (watchId) {
+            navigator.geolocation.clearWatch(watchId);
+        }
+        if (updateInterval) {
+            clearInterval(updateInterval);
+        }
+    });
+</script>
 {% endblock %}

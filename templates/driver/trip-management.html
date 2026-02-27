@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Trip Management{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">📋 Trip Management</h2>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Today's Scheduled Trips</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group" id="trip-list">
+                        <!-- Dynamically populated from backend -->
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6>BUS 001 - Campus Express</h6>
+                                    <small>8:00 AM - 8:20 AM</small>
+                                </div>
+                                <button class="btn btn-sm btn-success" onclick="startTrip(1)">Start</button>
+                            </div>
+                        </div>
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6>BUS 001 - Campus Express</h6>
+                                    <small>8:30 AM - 8:50 AM</small>
+                                </div>
+                                <button class="btn btn-sm btn-secondary" disabled>Completed</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-primary w-100 mb-2" onclick="reportIssue()">
+                        <i class="fas fa-tools"></i> Report Bus Issue
+                    </button>
+                    <button class="btn btn-warning w-100 mb-2" onclick="requestBreak()">
+                        <i class="fas fa-coffee"></i> Request Break
+                    </button>
+                    <button class="btn btn-secondary w-100" onclick="viewSchedule()">
+                        <i class="fas fa-calendar"></i> View Full Schedule
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function startTrip(tripId) {
+        fetch('/driver/api/start-trip', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({trip_id: tripId})
+        }).then(() => {
+            window.location.href = '/driver/dashboard';
+        });
+    }
+    
+    function reportIssue() {
+        alert('Issue reporting feature coming soon!');
+    }
+    
+    function requestBreak() {
+        alert('Break request sent to dispatcher!');
+    }
+    
+    function viewSchedule() {
+        window.location.href = '/driver/schedule';
+    }
+</script>
+{% endblock %}
